@@ -2,7 +2,7 @@ import json
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import or_, desc, func
+from sqlalchemy import or_
 from sqlalchemy.orm import relationship
 
 app = Flask(__name__)
@@ -86,20 +86,28 @@ if __name__ == '__main__':
         temp = User.query.filter(User.name.like('A%'))
         print(temp)
         print(temp.all())
-    #   or_
-        temp = User.query.filter(or_( User.name == 'Albert', User.age == 21))
+        #   or_
+        temp = User.query.filter(or_(User.name == 'Albert', User.age == 21))
         print(temp)
         print(temp.all())
         #   none
-        temp = User.query.filter(User.name == None )
+        temp = User.query.filter(User.name == None)
         print(temp)
         print(temp.all())
         #   none
-        temp = User.query.filter(User.name != None )
+        temp = User.query.filter(User.name != None)
         print(temp)
         print(temp.all())
         #   in_
-        temp = User.query.filter(or_(User.name == None ))
+        temp = User.query.filter(User.age.in_([18, 19]))
+        print(temp)
+        print(temp.all())
+        #   notin_
+        temp = User.query.filter(User.id.notin_([2, 3]))
+        print(temp)
+        print(temp.all())
+        #   none
+        temp = User.query.filter(User.id.between(2, 3))
         print(temp)
         print(temp.all())
 
