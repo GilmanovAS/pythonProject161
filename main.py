@@ -1,11 +1,15 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from  sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship
+from datetime import datetime
+from raw_data import users, orders, offers
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'DFSDFGFDF'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
 app.config['DEBAG'] = True
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['JSON_AS_ASCII'] = False
 
 db = SQLAlchemy(app)
 
@@ -15,35 +19,59 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     first_name = db.Column(db.String(100), nullable=False)
     last_name = db.Column(db.String(100), nullable=False)
-    age = db.Column(db.Integer, db.CheckConstaint('age<120'))
+    age = db.Column(db.Integer, db.CheckConstraint('age<120'))
     email = db.Column(db.String(100), nullable=False, unique=True)
     role = db.Column(db.String(20))
     phone = db.Column(db.String(11), unique=True)
-    offer = relationship('Order')
+    # offers = relationship('Order')
 
 
 class Order(db.Model):
     __tablename__ = 'order'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(200), nullable=False)
     start_date = db.Column(db.Date)
     end_date = db.Column(db.Date)
     address = db.Column(db.String(100))
     price = db.Column(db.Integer)
     customer_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     executor_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    customer = relationship('User', foreign_keys='Order.customer_id')
+    executor = relationship('User', foreign_keys='Order.executor_id')
+
+# class Offer(db.Model):
+#     __tablename__ = 'offer'
+#     id = db.Column(db.Integer, primary_key=True)
+#     order_id = db.Column(db.Integer, db.ForeignKey('order.id'))
+#     executor_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
 
-
-class Offer(db.Model):
-    __tablename__ = 'offer'
-    id = db.Column(db.Integer, primary_key=True)
-    order_id = db.Column(db.Integer, db.ForeignKey('order.id'))
-    executor_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+def insert_data():
+    new_order = []
+    for order in orders:
+        new_order.append(Order(
+            id=order['id'],
+            name=order['name'],
+            description=order['description'],
+            start_date=datetime.strptime(order['start_date'], '%m/%d/%Y'),
+            end_date=datetime.strptime(order['end_date'], '%m/%d/%Y'),
+            address=order['address'],
+            price=order['price'],
+            customer_id=order['customer_id'],
+            executor_id=order['executor_id']))
+    with app.app_context():
+        with db.session.begin():
+            db.session.add_all(new_order)
 
 
 if __name__ == '__main__':
+    with app.app_context():
+        db.drop_all()
+        db.create_all()
+    insert_data()
+    # print(Order.query.first())
+    # print(Order.query.first().name)
     app.run()
 
 # import json
