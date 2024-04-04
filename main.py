@@ -1,4 +1,6 @@
-from flask import Flask
+import json
+
+from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -40,14 +42,17 @@ class Order(db.Model):
     customer = relationship('User', foreign_keys='Order.customer_id')
     executor = relationship('User', foreign_keys='Order.executor_id')
 
-# class Offer(db.Model):
-#     __tablename__ = 'offer'
-#     id = db.Column(db.Integer, primary_key=True)
-#     order_id = db.Column(db.Integer, db.ForeignKey('order.id'))
-#     executor_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+class Offer(db.Model):
+    __tablename__ = 'offer'
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey('order.id'))
+    executor_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    order = relationship('Order', foreign_keys='Offer.order_id')
+    executor = relationship('User', foreign_keys='Offer.executor_id')
 
 
-def insert_data():
+def insert_data_orders():
     new_order = []
     for order in orders:
         new_order.append(Order(
@@ -65,13 +70,83 @@ def insert_data():
             db.session.add_all(new_order)
 
 
-if __name__ == '__main__':
+def insert_data_users():
+    new_user = []
+    for user in users:
+        new_user.append(User(
+            id=user['id'],
+            first_name=user['first_name'],
+            last_name=user['last_name'],
+            age=user['age'],
+            email=user['email'],
+            role=user['role'],
+            phone=user['phone']))
     with app.app_context():
-        db.drop_all()
-        db.create_all()
-    insert_data()
-    # print(Order.query.first())
-    # print(Order.query.first().name)
+        with db.session.begin():
+            db.session.add_all(new_user)
+
+
+def insert_data_offers():
+    new_offer = []
+    for offer in offers:
+        new_offer.append(Offer(
+            id=offer['id'],
+            order_id=offer['order_id'],
+            executor_id=offer['executor_id']))
+    with app.app_context():
+        with db.session.begin():
+            db.session.add_all(new_offer)
+
+
+@app.route('/users/', methods=['GET', 'POST'])
+def get_users():
+    if request.method == 'GET':
+        data = []
+        all_user = User.query.all()
+        for user in all_user:
+            data.append({
+                'id': user.id,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'age': user.age,
+                'email': user.email,
+                'role': user.role,
+                'phone': user.phone})
+        return jsonify(data)
+
+
+@app.route('/orders/', methods=['GET', 'POST'])
+def get_orders():
+    if request.method == 'GET':
+        data = []
+        all_orders = Order.query.all()
+        for order in all_orders:
+            costomer = User.query.get(order.customer_id)
+            executor = User.query.get(order.executor_id)
+            data.append({
+                'id': order.id,
+                'name': order.name,
+                'description': order.description,
+                'start_date': order.start_date,
+                'end_date': order.end_date,
+                'address': order.address,
+                'price': order.price,
+                'customer_id': costomer.last_name if costomer else 0,
+                'executor_id': executor.last_name if executor else 0
+            })
+        return jsonify(data)
+
+
+if __name__ == '__main__':
+    # with app.app_context():
+    #     db.drop_all()
+    #     db.create_all()
+    # insert_data_orders()
+    # insert_data_users()
+    # insert_data_offers()
+    with app.app_context():
+        print(Order.query.first())
+        print(Order.query.first().name)
     app.run()
 
 # import json
