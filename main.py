@@ -153,6 +153,44 @@ def get_orders():
         return 'OK', 200
 
 
+@app.route('/orders/<int:pk>', methods=['GET', 'PUT'])
+def get_orders_pk(pk: int):
+    if request.method == 'GET':
+        print(pk)
+        order = Order.query.get(pk)
+        costomer = User.query.get(order.customer_id)
+        executor = User.query.get(order.executor_id)
+        data = {
+            'id': order.id,
+            'name': order.name,
+            'description': order.description,
+            'start_date': order.start_date,
+            'end_date': order.end_date,
+            'address': order.address,
+            'price': order.price,
+            'customer_id': costomer.last_name if costomer else 0,
+            'executor_id': executor.last_name if executor else 0
+        }
+        return jsonify(data)
+    elif request.method == 'PUT':
+        data = request.get_json()
+        print(data)
+        print(data['name'])
+        order = Order.query.get(pk)
+        order.name = data['name'],
+        order.description = data['description']
+        order.start_date = datetime.strptime(data['start_date'], '%m/%d/%Y')
+        order.end_date = datetime.strptime(data['end_date'], '%m/%d/%Y')
+        order.address = data['address']
+        order.price = int(data['price'])
+        order.customer_id = int(data['customer_id'])
+        order.executor_id = int(data['executor_id'])
+        with app.app_context():
+            with db.session.begin():
+                db.session.add(order)
+        return 'OK', 200
+
+
 if __name__ == '__main__':
     # with app.app_context():
     #     db.drop_all()
