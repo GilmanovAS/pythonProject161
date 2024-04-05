@@ -1,9 +1,9 @@
-import json
+from datetime import datetime
 
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship
-from datetime import datetime
+
 from raw_data import users, orders, offers
 
 app = Flask(__name__)
@@ -135,6 +135,22 @@ def get_orders():
                 'executor_id': executor.last_name if executor else 0
             })
         return jsonify(data)
+    elif request.method == 'POST':
+        data = request.get_json()
+        print(data)
+        print(data['name'])
+        new_order = Order(name=data['name'],
+                          description=data['description'],
+                          start_date=datetime.strptime(data['start_date'], '%m/%d/%Y'),
+                          end_date=datetime.strptime(data['end_date'], '%m/%d/%Y'),
+                          address=data['address'],
+                          price=int(data['price']),
+                          customer_id=int(data['customer_id']),
+                          executor_id=int(data['executor_id']))
+        with app.app_context():
+            with db.session.begin():
+                db.session.add(new_order)
+        return 'OK', 200
 
 
 if __name__ == '__main__':
