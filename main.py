@@ -115,6 +115,39 @@ def get_users():
         return jsonify(data)
 
 
+@app.route('/users/<int:pk>', methods=['GET', 'PUT', 'DELETE'])
+def get_user_pk(pk: int):
+    if request.method == 'GET':
+        print(pk)
+        user = User.query.get(pk)
+        data = {'id': user.id,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'age': user.age,
+                'email': user.email,
+                'role': user.role,
+                'phone': user.phone
+                }
+        return jsonify(data)
+    elif request.method == 'PUT':
+        data = request.get_json()
+        user = User.query.get(pk)
+        user.first_name = data['first_name']
+        user.last_name = data['last_name']
+        user.age = data['age']
+        user.email = data['email']
+        user.role = data['role']
+        user.phone = data['phone']
+        db.session.add(user)
+        db.session.commit()
+        return 'UPDATED', 200
+    elif request.method == 'DELETE':
+        user = User.query.get(pk)
+        db.session.delete(user)
+        db.session.commit()
+        return 'DELETED', 200
+
+
 @app.route('/orders/', methods=['GET', 'POST'])
 def get_orders():
     if request.method == 'GET':
@@ -153,7 +186,7 @@ def get_orders():
         return 'OK', 200
 
 
-@app.route('/orders/<int:pk>', methods=['GET', 'PUT'])
+@app.route('/orders/<int:pk>', methods=['GET', 'PUT', 'DELETE'])
 def get_orders_pk(pk: int):
     if request.method == 'GET':
         print(pk)
@@ -174,10 +207,8 @@ def get_orders_pk(pk: int):
         return jsonify(data)
     elif request.method == 'PUT':
         data = request.get_json()
-        print(data)
-        print(data['name'])
         order = Order.query.get(pk)
-        order.name = data['name'],
+        order.name = data['name']
         order.description = data['description']
         order.start_date = datetime.strptime(data['start_date'], '%m/%d/%Y')
         order.end_date = datetime.strptime(data['end_date'], '%m/%d/%Y')
@@ -185,10 +216,14 @@ def get_orders_pk(pk: int):
         order.price = int(data['price'])
         order.customer_id = int(data['customer_id'])
         order.executor_id = int(data['executor_id'])
-        with app.app_context():
-            with db.session.begin():
-                db.session.add(order)
-        return 'OK', 200
+        db.session.add(order)
+        db.session.commit()
+        return 'UPDATED', 200
+    elif request.method == 'DELETE':
+        order = Order.query.get(pk)
+        db.session.delete(order)
+        db.session.commit()
+        return 'DELETED', 200
 
 
 if __name__ == '__main__':
